@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>XSockets.NET Channels</title>
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" />
+
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h1 class="page-header">XSockets.NET Channel example</h1>
+                <p class="alert alert-info">
+                    This example shows how to build a RTCDataChannel emulation using XSockets.NET. The project
+                    has a dependency to the XSockets.Owin.host , meaning that it runns in Win 8+ . You can of course
+                    run create an AnyOS version as well.
+
+                </p>
+            </div>
+
+        </div>
+
+        <div class="row">
+            <div class="col-xs-6">
+                <fieldset>
+                    <legend>Build & send message</legend>
+
+                    <div class="form-group">
+                        <label>Channel</label>
+
+                        <div class="input-group">
+                            <input type="text" id="channel" class="form-control"><span class="input-group-btn">
+                                <button class="btn btn-default" type="button" id="changeChannel">CHANGE</button>
+                            </span>
+
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Topic</label>
+                        <input type="text" id="topic" class="form-control" value="myTopic" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Messsage</label>
+                        <textarea id="message" class="form-control">Hello world!</textarea>
+
+                    </div>
+
+
+                    <div class="form-group">
+                        <button id="send" class="btn btn-default">
+                            Send
+                        </button>
+                    </div>
+
+                </fieldset>
+            </div>
+            <div class="col-xs-6">
+                <div id="log">
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="//rawgit.com/XSockets/XSockets.Clients/master/src/XSockets.Clients/XSockets.JavaScript/XSockets.latest.js"></script>
+    <script>
+        var ws, controller;
+
+
+
+        var url = "ws://" + location.host;
+        var logger = function (name, data) {
+            var els = $("<pre>").text("//" + name + "\n" + JSON.stringify(data || ""));
+            $("<div>").append(els).prependTo("#log");
+
+        };
+
+        $(function () {
+
+            ws = new XSockets.WebSocket(url, ["Channel"]);
+            ws.onconnected = function () {
+                logger("ws.onconnected", "Connected to XSockets.NET");
+
+                controller = ws.controller("channel");
+
+                controller.onopen = function (ci) {
+
+                    logger("controller.onopen", ci);
+
+                    controller.on("channelConnect", function (message) {
+                        logger("channelConnect", message);
+                        $("#channel").val(message.channel);
+                    });
+
+                    controller.on("channelDisconnect", function (message) {
+                        logger("channelDisconnect", message);
+
+                    });
+
+                    controller.on("channelChange", function (message) {
+                        logger("channelChange", message);
+
+                    });
+
+                    controller.on("channelJoin", function (message) {
+                        logger("channelJoin", message);
+                    });
+
+                    controller.on("channelLeave", function (message) {
+                        logger("channelLeave", message);
+                    });
+                    controller.on("dispatch", function (message) {
+                        // we could of coz have a more sophisticaed listener here, listening to the specific topic..
+                        logger("recieved a message", message);
+                    });
+                };
+
+                // ui events..
+
+                $("#changeChannel").on("click", function () {
+                    controller.invoke("ChangeChannel", $("#channel").val());
+                });
+                $("#send").on("click", function (evt) {
+                    evt.preventDefault();
+                    controller.invoke("dispatch", {
+                        topic: $("#topic").val(),
+                        channel: $("#channel").val(),
+                        data: $("#message").val()
+                    });
+                });
+            };
+        });
+
+    </script>
+
+</body>
+</html>
